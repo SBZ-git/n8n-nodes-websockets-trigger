@@ -1,15 +1,15 @@
 {
   "name": "n8n-nodes-websockets",
-  "version": "0.2.0",
-  "description": "A Websockets node for n8n",
+  "version": "0.2.4",
+  "description": "A Websockets trigger node for n8n",
   "keywords": [
     "n8n-community-node-package"
   ],
   "license": "MIT",
   "homepage": "",
   "author": {
-    "name": "James Bohrman",
-    "email": "jdbohrman@outlook.com"
+    "name": "Marco Zampieri",
+    "email": "marco.zampieri@data4prime.com"
   },
   "repository": {
     "type": "git",
@@ -36,12 +36,10 @@
   "n8n": {
     "n8nNodesApiVersion": 1,
     "credentials": [
-      "dist/credentials/ExampleCredentialsApi.credentials.js",
-      "dist/credentials/HttpBinApi.credentials.js"
+      "dist/credentials/WebsocketsCredentialsApi.credentials.js"
     ],
     "nodes": [
-      "dist/nodes/ExampleNode/ExampleNode.node.js",
-      "dist/nodes/HttpBin/HttpBin.node.js"
+      "dist/nodes/websockets/WebsocketsNode.node.js"
     ]
   },
   "devDependencies": {
