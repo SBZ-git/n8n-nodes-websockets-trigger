@@ -22,7 +22,6 @@
   "packageManager": "pnpm@9.1.4",
   "main": "index.js",
   "scripts": {
-    "preinstall": "npx only-allow pnpm",
     "build": "tsc && gulp build:icons",
     "dev": "tsc --watch",
     "format": "prettier nodes credentials --write",
@@ -35,9 +34,6 @@
   ],
   "n8n": {
     "n8nNodesApiVersion": 1,
-    "credentials": [
-      "dist/credentials/WebsocketsCredentialsApi.credentials.js"
-    ],
     "nodes": [
       "dist/nodes/websockets/WebsocketsNode.node.js"
     ]
@@ -55,6 +51,7 @@
     "n8n-workflow": "*"
   },
   "dependencies": {
-    "socket.io-client": "^4.7.5"
+    "@types/ws": "^8.5.13",
+    "ws": "^8.18.0"
   }
 }

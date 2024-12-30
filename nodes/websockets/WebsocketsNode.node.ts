@@ -1,106 +1,95 @@
 import {
-    IExecuteFunctions,
-    INodeExecutionData,
-    INodeType,
-    INodeTypeDescription,
-    NodeApiError,
-    NodeOperationError,
-    ICredentialDataDecryptedObject,
-		sleep,
+	INodeType,
+	INodeTypeDescription,
+	ITriggerFunctions,
+	ITriggerResponse,
+	NodeApiError,
+	NodeOperationError,
 } from 'n8n-workflow';
-import { io, Socket } from "socket.io-client";
+import WebSocket from 'ws';
 
 export class WebsocketsNode implements INodeType {
-    description: INodeTypeDescription = {
-        displayName: 'Websockets Node',
-        name: 'websocketsNode',
-        group: ['trigger'],
-        version: 1,
-        description: 'Basic Websockets Node using Socket.io',
-        defaults: {
-            name: 'Websockets Node',
-        },
-        inputs: ['main'],
-        outputs: ['main'],
-        credentials: [
-            {
-                name: 'websocketsCredentialsApi',
-                required: true,
-            },
-        ],
-        properties: [
-            {
-                displayName: 'Websocket URL',
-                name: 'websocketUrl',
-                type: 'string',
-                default: '',
-                placeholder: 'ws://example.com/my-namespace',
-                description: 'The URL of the websocket server to connect to',
-            },
-            {
-                displayName: 'Event Name',
-                name: 'eventName',
-                type: 'string',
-                default: '',
-                description: 'The name of the event to listen for',
-            },
-        ],
-    };
+	description: INodeTypeDescription = {
+		displayName: 'Websocket Trigger',
+		name: 'websocketsNode',
+		group: ['trigger'],
+		version: 1,
+		description: 'Basic Websockets Node using "ws" library',
+		defaults: {
+			name: 'Websockets Node',
+		},
+		inputs: ['main'],
+		outputs: ['main'],
+		properties: [
+			{
+				displayName: 'Websocket URL',
+				name: 'websocketUrl',
+				type: 'string',
+				default: '',
+				placeholder: 'ws://example.com/',
+				description: 'The URL of the websocket server to connect to',
+			},
+		],
+	};
 
-    async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
-        const items = this.getInputData();
-        const returnData: INodeExecutionData[] = [];
+	async trigger(this: ITriggerFunctions): Promise<ITriggerResponse> {
+		let ws: any = null;
 
-        const credentials = await this.getCredentials('websocketsCredentialsApi') as ICredentialDataDecryptedObject;
+		const startConsumer = async () => {
+			try {
+				const websocketUrl = this.getNodeParameter('websocketUrl') as string;
+				ws = new WebSocket(websocketUrl);
 
-        for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
-            try {
-                const websocketUrl = this.getNodeParameter('websocketUrl', itemIndex, '') as string;
-                const eventName = this.getNodeParameter('eventName', itemIndex, '') as string;
+				ws.on('error', (error: {
+					message: any;
+				}) => {
+					const errorData = {
+						message: 'WebSocket connection error',
+						description: error.message,
+					};
+					throw new NodeApiError(this.getNode(), errorData);
+				});
 
-                const socket: Socket = io(websocketUrl, {
-                    reconnectionDelayMax: 10000,
-                    auth: {
-                        token: credentials.authToken as string,
-                    },
-                });
+				ws.on('message', (data: any, isBinary: boolean) => {
+					let message = isBinary ? data : data.toString();
+					try {
+						message = JSON.parse(message)
+					} catch (exception) {
+						console.warn('Unable to json parse websocket message: ' + message)
+					}
 
-                // Connect to the WebSocket server
-                socket.connect();
+					this.emit([this.helpers.returnJsonArray([message])]);
+				});
+			} catch (error) {
+				throw new NodeOperationError(
+					this.getNode(),
+					`Execution error: ${error.message}`,
+				);
+			}
+		}
 
-                // Listen for the specified event
-                socket.on(eventName, (data) => {
-                    returnData.push({ json: { event: eventName, data } });
-                });
+		await startConsumer();
 
-								// Handle connection errors
-								socket.on('connect_error', (error) => {
-									const errorData = {
-											message: 'WebSocket connection error',
-											description: error.message,
-									};
-									throw new NodeApiError(this.getNode(), errorData);
-								});
+		// The "closeFunction" function gets called by n8n whenever
+		// the workflow gets deactivated and can so clean up.
+		async function closeFunction() {
+			ws.terminate();
+		}
 
-                // Wait for a short time to allow for connection and initial data receipt
-                await new Promise(resolve => sleep(1000));
+		// The "manualTriggerFunction" function gets called by n8n
+		// when a user is in the workflow editor and starts the
+		// workflow manually. So the function has to make sure that
+		// the emit() gets called with similar data like when it
+		// would trigger by itself so that the user knows what data
+		// to expect.
+		async function manualTriggerFunction() {
+			await startConsumer();
+		}
 
-                // Disconnect after processing
-                socket.disconnect();
+		return {
+			closeFunction,
+			manualTriggerFunction,
+		};
 
-            } catch (error) {
-                if (this.continueOnFail()) {
-                    returnData.push({ json: { error: error.message }, pairedItem: itemIndex });
-                } else {
-                    if (error.name === 'NodeApiError') {
-                        throw error;
-                    } else {
-                        throw new NodeOperationError(this.getNode(), `Execution error: ${error.message}`, { itemIndex });
-                    }
-                }
-            }
-        }
-
-        return this.prepareOutputData(returnData);
-    }
+	}
 }
