@@ -1,5 +1,7 @@
 # n8n-nodes-websockets-trigger
 
+[![NPM](https://nodei.co/npm/n8n-nodes-websockets-trigger.png)](https://npmjs.org/package/n8n-nodes-websockets-trigger)
+
 This is an n8n community node. It lets you connect to any websocket instance and use its messages as a trigger to your workflow.
 
 
