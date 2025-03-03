@@ -1,3 +1,7 @@
+> [!WARNING]  
+> This repository has been discontinued. A better version can now be found here https://github.com/SBZ-git/n8n-nodes-websocket-ws
+
+
 # n8n-nodes-websockets-trigger
 
 [![NPM](https://nodei.co/npm/n8n-nodes-websockets-trigger.png)](https://npmjs.org/package/n8n-nodes-websockets-trigger)
